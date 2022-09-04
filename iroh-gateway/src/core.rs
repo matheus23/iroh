@@ -119,6 +119,7 @@ impl Core {
         sock.set_reuse_address(true).unwrap();
         sock.set_reuse_port(true).unwrap();
         sock.set_nonblocking(true).unwrap();
+        sock.set_nodelay(true).unwrap();
         sock.bind(&addr.into()).unwrap();
         sock.listen(8192*2).unwrap();
 
