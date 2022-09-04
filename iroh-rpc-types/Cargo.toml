@@ -22,6 +22,8 @@ tokio = { version = "1", features = ["net", "sync"] }
 tokio-stream = { version = "0.1.9", optional = true, features = ["net"] }
 paste = "1.0.7"
 
+socket2 = {version="0.4.7", features=["all"]}
+
 [build-dependencies]
 prost-build = "0.11.1"
 tonic-build = { version = "0.8", features = ["prost"], optional = true }

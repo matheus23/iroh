@@ -6,6 +6,14 @@ macro_rules! proxy {
                 match addr {
                     #[cfg(feature = "grpc")]
                     $crate::Addr::GrpcHttp2(addr) => {
+                        let sock = socket2::Socket::new(socket2::Domain::IPV4,socket2::Type::STREAM,
+        None).unwrap();
+         sock.set_reuse_address(true).unwrap();
+    sock.set_reuse_port(true).unwrap();
+    sock.set_nonblocking(true).unwrap();
+    sock.bind(&addr.into()).unwrap();
+    sock.listen(8192).unwrap();
+            let incoming = tokio_stream::wrappers::TcpListenerStream::new(tokio::net::TcpListener::from_std(sock.into()).unwrap());
                         let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
                         health_reporter
                             .set_serving::<[<$label:lower _server>]::[<$label Server>]<T>>()
@@ -14,7 +22,8 @@ macro_rules! proxy {
                         tonic::transport::Server::builder()
                             .add_service(health_service)
                             .add_service([<$label:lower _server>]::[<$label Server>]::new(source))
-                            .serve(addr)
+                             .serve_with_incoming(incoming)
+                            // .serve(addr)
                             .await?;
 
                         Ok(())

@@ -16,7 +16,9 @@ use tokio::sync::RwLock;
 use tracing::{debug, error};
 
 async fn serve(_: usize, config: Config, rpc_addr: GatewayServerAddr) {
-    let handler = Core::new(Arc::new(config), rpc_addr, Arc::new(None)).await.unwrap();
+    let handler = Core::new(Arc::new(config), rpc_addr, Arc::new(None))
+        .await
+        .unwrap();
     let server = handler.server();
     println!("listening on {}", server.local_addr());
     server.await.unwrap();

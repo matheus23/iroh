@@ -121,7 +121,7 @@ impl Core {
         sock.set_nonblocking(true).unwrap();
         sock.set_nodelay(true).unwrap();
         sock.bind(&addr.into()).unwrap();
-        sock.listen(8192*2).unwrap();
+        sock.listen(8192 * 2).unwrap();
 
         // let incoming =
         //     TcpListenerStream::new(TcpListener::from_std(sock.into()).unwrap());
