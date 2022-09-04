@@ -67,7 +67,7 @@ fn main() -> Result<()> {
                 None => panic!("server_rpc_addr not set"),
             };
 
-            tokio::runtime::Builder::new_multi_thread()
+            tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()
                 .unwrap()
