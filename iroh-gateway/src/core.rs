@@ -1,8 +1,18 @@
 use axum::Router;
+use futures::ready;
+use futures::stream::StreamExt;
+use hyper::server::accept::Accept;
 use iroh_rpc_client::Client as RpcClient;
 use iroh_rpc_types::gateway::GatewayServerAddr;
+use tokio_stream::wrappers::TcpListenerStream;
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    net::{SocketAddr, TcpListener},
+    pin::Pin,
+    sync::Arc,
+    task::{Context, Poll},
+};
 use tokio::sync::RwLock;
 
 use crate::{
@@ -90,12 +100,59 @@ impl Core {
         // todo(arqu): make configurable
         let addr = format!("0.0.0.0:{}", self.state.config.port());
 
-        axum::Server::bind(&addr.parse().unwrap())
+        // axum::Server::bind(&addr.parse().unwrap())
+        //     .http1_preserve_header_case(true)
+        //     .http1_title_case_headers(true)
+        //     .serve(app.into_make_service())
+
+        let addr: std::net::SocketAddr = addr.parse().unwrap();
+        let sock = socket2::Socket::new(
+            match addr {
+                SocketAddr::V4(_) => socket2::Domain::IPV4,
+                SocketAddr::V6(_) => socket2::Domain::IPV6,
+            },
+            socket2::Type::STREAM,
+            None,
+        )
+        .unwrap();
+
+        sock.set_reuse_address(true).unwrap();
+        sock.set_reuse_port(true).unwrap();
+        sock.set_nonblocking(true).unwrap();
+        sock.bind(&addr.into()).unwrap();
+        sock.listen(8192).unwrap();
+
+        // let incoming =
+        //     TcpListenerStream::new(TcpListener::from_std(sock.into()).unwrap());
+
+        let incoming: TcpListener = sock.into();
+
+        axum::Server::from_tcp(incoming)
+            .unwrap()
             .http1_preserve_header_case(true)
             .http1_title_case_headers(true)
             .serve(app.into_make_service())
     }
 }
+
+// pub struct ServerAcceptSharedPort {
+//     pub tcpls: TcpListener,
+// }
+
+// impl Accept for ServerAcceptSharedPort {
+//     type Conn = TcpStream;
+//     type Error = Box<dyn std::error::Error + Send + Sync>;
+
+//     fn poll_accept(
+//         self: Pin<&mut Self>,
+//         cx: &mut Context<'_>,
+//     ) -> Poll<Option<Result<Self::Conn, Self::Error>>> {
+//         // self.tcpls.poll_accept(cx)
+//         // Poll::Ready(Ok((stream, _))) => Poll::Ready(Some(Ok(stream))),
+//         let (stream, _addr) = ready!(self.tcpls.poll_accept(cx))?;
+//         Poll::Ready(Some(Ok(stream)))
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

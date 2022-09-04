@@ -99,7 +99,7 @@ pub fn make_config<T, S, V>(
     flag_overrides: HashMap<S, V>,
 ) -> Result<T>
 where
-    T: serde::de::DeserializeOwned + Source + Send + Sync + 'static,
+    T: serde::de::DeserializeOwned + Source + Send + Sync + 'static + Clone,
     S: AsRef<str>,
     V: Into<Value>,
 {
