@@ -78,9 +78,9 @@ async fn main() -> Result<()> {
         false => Arc::new(None),
     };
 
-    let shared_state = Core::make_state(Arc::new(config.clone()), Arc::clone(&bad_bits)).await?;
+    // let shared_state = Core::make_state(Arc::new(config.clone()), Arc::clone(&bad_bits)).await?;
 
-    let handler = Core::new_with_state(rpc_addr, Arc::clone(&shared_state)).await?;
+    // let handler = Core::new_with_state(rpc_addr, Arc::clone(&shared_state)).await?;
 
     let metrics_handle = iroh_metrics::MetricsHandle::new(metrics_config)
         .await
@@ -91,7 +91,21 @@ async fn main() -> Result<()> {
         
     // });
 
-    handler.multi_server();
+    let mut handlers = Vec::new();
+        for i in 0..num_cpus::get() {
+            // let shared_state = Core::make_state(, Arc::clone(&bad_bits)).await?;
+            let c = Core::new(Arc::new(config.clone()), None, Arc::new(None)).await?;
+            let h = std::thread::spawn(move || {
+                tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap()
+                    .block_on(Core::serve_internal(c));
+            });
+            handlers.push(h);
+        }
+
+    // handler.multi_server();
 
     #[cfg(feature = "uds-gateway")]
     let uds_server_task = {

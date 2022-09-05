@@ -40,13 +40,16 @@ pub struct State {
 impl Core {
     pub async fn new(
         config: Arc<dyn StateConfig>,
-        rpc_addr: GatewayServerAddr,
+        rpc_addr: Option<GatewayServerAddr>,
         bad_bits: Arc<Option<RwLock<BadBits>>>,
     ) -> anyhow::Result<Self> {
-        tokio::spawn(async move {
+        if let Some(raddr) = rpc_addr {
+            tokio::spawn(async move {
             // TODO: handle error
-            rpc::new(rpc_addr, Gateway::default()).await
+            rpc::new(raddr, Gateway::default()).await
         });
+        }
+        
         let rpc_client = RpcClient::new(config.rpc_client().clone()).await?;
         let mut templates = HashMap::new();
         templates.insert("dir_list".to_string(), templates::DIR_LIST.to_string());
@@ -136,7 +139,9 @@ impl Core {
     }
 
     pub async fn serve_internal(c: Core) {
-        c.server().await.unwrap();
+        let server = c.server();
+        println!("HTTP endpoint listening on {}", server.local_addr());
+        server.await.unwrap();
     }
 
     pub fn multi_server(
@@ -202,8 +207,8 @@ mod tests {
         );
         config.set_default_headers();
 
-        let rpc_addr = "grpc://0.0.0.0:0".parse().unwrap();
-        let handler = Core::new(Arc::new(config), rpc_addr, Arc::new(None))
+        // let rpc_addr = "grpc://0.0.0.0:0".parse().unwrap();
+        let handler = Core::new(Arc::new(config), None, Arc::new(None))
             .await
             .unwrap();
         let server = handler.server();
