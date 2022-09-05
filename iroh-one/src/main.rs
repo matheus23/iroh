@@ -85,10 +85,10 @@ async fn main() -> Result<()> {
     let metrics_handle = iroh_metrics::MetricsHandle::new(metrics_config)
         .await
         .expect("failed to initialize metrics");
-    let server = handler.server();
-    println!("HTTP endpoint listening on {}", server.local_addr());
+    // let server = handler.server();
+    // println!("HTTP endpoint listening on {}", server.local_addr());
     let core_task = tokio::spawn(async move {
-        server.await.unwrap();
+        handler.multi_server();
     });
 
     #[cfg(feature = "uds-gateway")]

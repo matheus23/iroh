@@ -134,6 +134,32 @@ impl Core {
             .http1_title_case_headers(true)
             .serve(app.into_make_service())
     }
+
+    pub async fn serve_internal(c: Core) {
+        c.server().await.unwrap();
+    }
+
+    pub fn multi_server(
+        self,
+    )
+    {
+        let mut handlers = Vec::new();
+        for i in 0..num_cpus::get() {
+            let c = self.clone();
+            let h = std::thread::spawn(move || {
+                tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap()
+                    .block_on(Core::serve_internal(c));
+            });
+            handlers.push(h);
+        }
+
+        for h in handlers {
+            h.join().unwrap();
+        }
+    }
 }
 
 // pub struct ServerAcceptSharedPort {
