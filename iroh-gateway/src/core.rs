@@ -156,9 +156,9 @@ impl Core {
             handlers.push(h);
         }
 
-        for h in handlers {
-            h.join().unwrap();
-        }
+        // for h in handlers {
+        //     h.join().unwrap();
+        // }
     }
 }
 
