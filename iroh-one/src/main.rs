@@ -87,9 +87,11 @@ async fn main() -> Result<()> {
         .expect("failed to initialize metrics");
     // let server = handler.server();
     // println!("HTTP endpoint listening on {}", server.local_addr());
-    let core_task = tokio::spawn(async move {
-        handler.multi_server();
-    });
+    // let core_task = tokio::spawn(async move {
+        
+    // });
+
+    handler.multi_server();
 
     #[cfg(feature = "uds-gateway")]
     let uds_server_task = {
@@ -109,7 +111,7 @@ async fn main() -> Result<()> {
     p2p_rpc.abort();
     #[cfg(feature = "uds-gateway")]
     uds_server_task.abort();
-    core_task.abort();
+    // core_task.abort();
 
     metrics_handle.shutdown();
     Ok(())
