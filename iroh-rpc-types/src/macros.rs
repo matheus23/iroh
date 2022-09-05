@@ -45,9 +45,9 @@ macro_rules! proxy {
                                 handlers.push(h);
                             }
 
-                            for h in handlers {
-                                h.join().unwrap();
-                            }
+                            // for h in handlers {
+                            //     h.join().unwrap();
+                            // }
 
 
 
