@@ -26,6 +26,7 @@ use iroh_rpc_types::p2p::{
     Multiaddrs, P2p as RpcP2p, P2pServerAddr, Providers, VersionResponse,
 };
 
+#[derive(Debug, Clone)]
 struct P2p {
     sender: Sender<RpcMessage>,
 }

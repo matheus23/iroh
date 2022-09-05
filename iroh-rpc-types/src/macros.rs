@@ -2,11 +2,9 @@
 macro_rules! proxy {
     ($label:ident, $($name:ident: $req:ty => $res:ty),+) => {
         paste::paste! {
-            pub async fn serve<T: $label>(addr: [<$label ServerAddr>], source: T) -> anyhow::Result<()> {
-                match addr {
-                    #[cfg(feature = "grpc")]
-                    $crate::Addr::GrpcHttp2(addr) => {
-                        let sock = socket2::Socket::new(socket2::Domain::IPV4,socket2::Type::STREAM,
+            #[cfg(feature = "grpc")]
+            async fn internal_serve<T: $label>(_: usize, addr: std::net::SocketAddr, source: T) {
+                let sock = socket2::Socket::new(socket2::Domain::IPV4,socket2::Type::STREAM,
         None).unwrap();
          sock.set_reuse_address(true).unwrap();
     sock.set_reuse_port(true).unwrap();
@@ -24,7 +22,56 @@ macro_rules! proxy {
                             .add_service([<$label:lower _server>]::[<$label Server>]::new(source))
                              .serve_with_incoming(incoming)
                             // .serve(addr)
-                            .await?;
+                            .await.unwrap();
+            }
+
+            pub async fn serve<T: $label>(addr: [<$label ServerAddr>], source: T) -> anyhow::Result<()> where T: Clone{
+                match addr {
+                    #[cfg(feature = "grpc")]
+                    $crate::Addr::GrpcHttp2(addr) => {
+
+
+                        let mut handlers = Vec::new();
+                            for i in 0..8 {
+                                let s = source.clone();
+                                let h = std::thread::spawn(move || {
+
+                                    tokio::runtime::Builder::new_current_thread()
+                                        .enable_all()
+                                        .build()
+                                        .unwrap()
+                                        .block_on(internal_serve(i, addr, s));
+                                });
+                                handlers.push(h);
+                            }
+
+                            for h in handlers {
+                                h.join().unwrap();
+                            }
+
+
+
+// let sock = socket2::Socket::new(socket2::Domain::IPV4,socket2::Type::STREAM,
+//         None).unwrap();
+//          sock.set_reuse_address(true).unwrap();
+//     sock.set_reuse_port(true).unwrap();
+//     sock.set_nonblocking(true).unwrap();
+//     sock.bind(&addr.into()).unwrap();
+//     sock.listen(8192).unwrap();
+//             let incoming = tokio_stream::wrappers::TcpListenerStream::new(tokio::net::TcpListener::from_std(sock.into()).unwrap());
+//                         let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
+//                         health_reporter
+//                             .set_serving::<[<$label:lower _server>]::[<$label Server>]<T>>()
+//                             .await;
+
+//                         tonic::transport::Server::builder()
+//                             .add_service(health_service)
+//                             .add_service([<$label:lower _server>]::[<$label Server>]::new(source))
+//                              .serve_with_incoming(incoming)
+//                             // .serve(addr)
+//                             .await.unwrap();
+
+                        
 
                         Ok(())
                     }
