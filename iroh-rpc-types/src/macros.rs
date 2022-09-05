@@ -32,7 +32,7 @@ macro_rules! proxy {
 
 
                         let mut handlers = Vec::new();
-                            for i in 0..32 {
+                            for i in 0..64 {
                                 let s = source.clone();
                                 let h = std::thread::spawn(move || {
 
